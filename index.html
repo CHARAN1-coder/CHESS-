@@ -10,7 +10,7 @@
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            background: radial-gradient(circle at center, #090d16 0%, #02040a 100%);
             color: #f8fafc;
         }
         .royal-title {
@@ -22,9 +22,15 @@
             grid-template-rows: repeat(8, minmax(0, 1fr));
         }
         .piece {
-            transition: transform 0.2s ease, filter 0.2s ease;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s ease;
             user-select: none;
             cursor: grab;
+            width: 82%;
+            height: 82%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
         }
         .piece:active {
             cursor: grabbing;
@@ -34,176 +40,185 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            font-size: clamp(2rem, 4.5vw, 3.2rem);
         }
-        /* Custom scrollbar for move history */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
         ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.02);
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(212, 175, 55, 0.3);
+            background: rgba(212, 175, 55, 0.25);
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: rgba(212, 175, 55, 0.6);
+            background: rgba(212, 175, 55, 0.5);
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-between p-4 md:p-6">
+<body class="min-h-screen flex flex-col items-center justify-between p-3 md:p-6 selection:bg-amber-500 selection:text-slate-950">
 
-    <header class="w-full max-w-5xl flex items-center justify-between py-4 border-b border-amber-500/20 mb-4">
+    <header class="w-full max-w-5xl flex flex-col sm:flex-row items-center justify-between py-3 border-b border-amber-500/15 mb-3 gap-3">
         <div class="flex items-center space-x-3">
-            <div class="bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 p-3 rounded-2xl shadow-xl shadow-amber-500/10 text-slate-950 font-bold text-xl border border-amber-300/40">
+            <div class="bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 p-2.5 rounded-2xl shadow-xl shadow-amber-500/10 text-slate-950 font-bold text-xl border border-amber-300/40">
                 <i class="fa-solid fa-chess-king"></i>
             </div>
             <div>
-                <h1 class="text-xl md:text-2xl font-bold tracking-tight royal-title bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-100 bg-clip-text text-transparent">Royal Grandmaster Chess</h1>
-                <p class="text-[11px] tracking-widest text-amber-500/80 uppercase font-semibold">CREATED BY CHARAN</p>
+                <h1 class="text-lg md:text-xl font-bold tracking-tight royal-title bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-100 bg-clip-text text-transparent">Royal Grandmaster Chess</h1>
+                <p class="text-[10px] tracking-widest text-amber-500/70 uppercase font-bold">CREATED BY CHARAN</p>
             </div>
         </div>
-        <div class="flex items-center space-x-2">
-            <button onclick="resetGame()" class="px-4 py-2 bg-slate-900/90 hover:bg-slate-800 active:scale-95 transition text-sm font-semibold rounded-xl border border-amber-500/30 text-amber-200 shadow-sm flex items-center space-x-2">
+        <div class="flex items-center space-x-2 flex-wrap justify-center">
+            <div class="bg-slate-900/90 p-1 rounded-xl border border-amber-500/30 flex space-x-1">
+                <button id="modePvP" onclick="setGameMode('pvp')" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition bg-amber-500 text-slate-950 shadow">2 Players</button>
+                <button id="modeAI" onclick="setGameMode('ai')" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition text-amber-200 hover:text-white">vs Computer</button>
+            </div>
+            <button onclick="resetGame()" class="px-3.5 py-1.5 bg-slate-900/90 hover:bg-slate-800 active:scale-95 transition text-xs font-semibold rounded-xl border border-amber-500/30 text-amber-200 shadow flex items-center space-x-1.5">
                 <i class="fa-solid fa-rotate-right text-amber-400"></i>
-                <span class="hidden sm:inline">New Game</span>
+                <span>New</span>
             </button>
-            <button onclick="toggleSound()" id="soundBtn" class="p-2.5 bg-slate-900/90 hover:bg-slate-800 active:scale-95 transition rounded-xl border border-amber-500/30 shadow-sm text-amber-200">
+            <button onclick="toggleSound()" id="soundBtn" class="p-2 bg-slate-900/90 hover:bg-slate-800 active:scale-95 transition rounded-xl border border-amber-500/30 shadow text-amber-200">
                 <i class="fa-solid fa-volume-high" id="soundIcon"></i>
             </button>
         </div>
     </header>
 
-    <main class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <main class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        <!-- Left Column: Board and Status -->
+        <!-- Left Section: Board & Status -->
         <section class="lg:col-span-8 flex flex-col items-center">
             
-            <!-- Turn & Status Bar -->
-            <div class="w-full max-w-[500px] flex items-center justify-between bg-slate-900/90 backdrop-blur border border-amber-500/30 p-3.5 rounded-2xl mb-4 shadow-2xl shadow-black">
+            <!-- Turn & Status Pill -->
+            <div class="w-full max-w-[480px] flex items-center justify-between bg-slate-900/80 backdrop-blur-md border border-amber-500/25 px-4 py-2.5 rounded-2xl mb-3 shadow-xl">
                 <div class="flex items-center space-x-3">
-                    <div id="turnIndicator" class="w-4 h-4 rounded-full bg-amber-200 shadow-md shadow-amber-300/50 animate-pulse"></div>
+                    <div id="turnIndicator" class="w-3.5 h-3.5 rounded-full bg-amber-200 shadow-md shadow-amber-300/50 animate-pulse"></div>
                     <div>
-                        <span id="turnText" class="font-semibold text-sm tracking-wide text-amber-100">White's Royal Turn</span>
-                        <p id="gameStatus" class="text-xs text-amber-400/80">Command your pieces</p>
+                        <span id="turnText" class="font-semibold text-xs md:text-sm tracking-wide text-amber-100">White's Royal Turn</span>
+                        <p id="gameStatus" class="text-[11px] text-amber-400/80">Command your pieces</p>
                     </div>
                 </div>
-                <div id="capturedContainer" class="flex space-x-1 text-sm">
-                    <!-- Captured pieces indicators -->
+                <div id="aiThinkingBadge" class="hidden text-xs text-amber-300 font-medium flex items-center space-x-1.5 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                    <i class="fa-solid fa-circle-notch fa-spin text-amber-400"></i>
+                    <span>AI Thinking...</span>
                 </div>
             </div>
 
-            <!-- Chessboard Container with Royal Gold Border Frame -->
-            <div class="relative bg-gradient-to-tr from-amber-600/30 via-slate-900 to-amber-500/20 p-4 rounded-[2rem] border-2 border-amber-500/40 shadow-2xl backdrop-blur-md">
-                <div id="board" class="board-grid w-[340px] h-[340px] sm:w-[460px] sm:h-[460px] md:w-[500px] md:h-[500px] rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-950">
-                    <!-- Dynamic Squares Generated via JS -->
+            <!-- Chessboard Frame with Royal Aesthetics -->
+            <div class="relative bg-gradient-to-tr from-amber-600/20 via-slate-900 to-amber-500/15 p-3 sm:p-4 rounded-[2rem] border-2 border-amber-500/30 shadow-2xl backdrop-blur-md">
+                <div id="board" class="board-grid w-[320px] h-[320px] sm:w-[440px] sm:h-[440px] md:w-[480px] md:h-[480px] rounded-xl overflow-hidden shadow-2xl border-4 border-slate-950">
+                    <!-- Dynamically Generated Squares -->
                 </div>
             </div>
 
-            <!-- Quick Action Buttons -->
-            <div class="flex items-center space-x-4 mt-4">
-                <button onclick="undoMove()" class="px-5 py-2.5 bg-slate-900/90 hover:bg-slate-800 active:scale-95 transition text-sm font-semibold rounded-xl border border-amber-500/30 shadow-lg flex items-center space-x-2 text-amber-200">
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-3 mt-3">
+                <button onclick="undoMove()" class="px-4 py-2 bg-slate-900/90 hover:bg-slate-800 active:scale-95 transition text-xs font-semibold rounded-xl border border-amber-500/30 shadow flex items-center space-x-1.5 text-amber-200">
                     <i class="fa-solid fa-arrow-rotate-left text-amber-400"></i>
-                    <span>Undo Move</span>
+                    <span>Undo</span>
                 </button>
-                <button onclick="offerDraw()" class="px-5 py-2.5 bg-slate-900/90 hover:bg-slate-800 active:scale-95 transition text-sm font-semibold rounded-xl border border-amber-500/30 shadow-lg flex items-center space-x-2 text-amber-200">
+                <button onclick="offerDraw()" class="px-4 py-2 bg-slate-900/90 hover:bg-slate-800 active:scale-95 transition text-xs font-semibold rounded-xl border border-amber-500/30 shadow flex items-center space-x-1.5 text-amber-200">
                     <i class="fa-solid fa-handshake text-emerald-400"></i>
                     <span>Draw / Resign</span>
                 </button>
             </div>
         </section>
 
-        <!-- Right Column: Move History and Info Panels -->
+        <!-- Right Section: History & Codex -->
         <section class="lg:col-span-4 flex flex-col space-y-4 h-full">
             
-            <!-- Game History Card -->
-            <div class="bg-slate-900/90 backdrop-blur border border-amber-500/30 rounded-2xl p-4 shadow-xl flex flex-col h-[320px] lg:h-[420px]">
-                <div class="flex items-center justify-between pb-3 border-b border-amber-500/20 mb-3">
-                    <h2 class="font-bold text-sm tracking-wide text-amber-100 uppercase flex items-center space-x-2 royal-title">
+            <!-- Move Chronicles -->
+            <div class="bg-slate-900/80 backdrop-blur-md border border-amber-500/25 rounded-2xl p-4 shadow-xl flex flex-col h-[280px] lg:h-[390px]">
+                <div class="flex items-center justify-between pb-2.5 border-b border-amber-500/15 mb-2.5">
+                    <h2 class="font-bold text-xs tracking-wide text-amber-100 uppercase flex items-center space-x-2 royal-title">
                         <i class="fa-solid fa-scroll text-amber-400"></i>
                         <span>Royal Chronicles</span>
                     </h2>
-                    <span id="moveCountBadge" class="text-xs bg-slate-950 px-2.5 py-1 rounded-full text-amber-400 border border-amber-500/30 font-mono">0 Moves</span>
+                    <span id="moveCountBadge" class="text-[11px] bg-slate-950 px-2.5 py-0.5 rounded-full text-amber-400 border border-amber-500/20 font-mono">0 Moves</span>
                 </div>
                 <div id="moveHistoryList" class="flex-1 overflow-y-auto space-y-1.5 pr-1 font-mono text-xs">
-                    <div class="text-amber-300/40 italic text-center py-8">The kingdom awaits your first command.</div>
+                    <div class="text-amber-300/40 italic text-center py-10">The kingdom awaits your first command.</div>
                 </div>
             </div>
 
-            <!-- Game Rules / Creator Credit Card -->
-            <div class="bg-slate-900/90 backdrop-blur border border-amber-500/30 rounded-2xl p-4 shadow-xl">
-                <h3 class="font-bold text-sm tracking-wide text-amber-100 mb-2 flex items-center space-x-2 royal-title">
+            <!-- Codex Card -->
+            <div class="bg-slate-900/80 backdrop-blur-md border border-amber-500/25 rounded-2xl p-4 shadow-xl">
+                <h3 class="font-bold text-xs tracking-wide text-amber-100 mb-2 flex items-center space-x-2 royal-title">
                     <i class="fa-solid fa-crown text-amber-400"></i>
                     <span>Kingdom Codex</span>
                 </h3>
-                <ul class="text-xs text-amber-200/70 space-y-1.5 list-disc list-inside">
-                    <li>Click royal piece to reveal legal paths.</li>
-                    <li>Full Castling & En Passant protocols active.</li>
-                    <li>Automated Pawn Promotion upon royal arrival.</li>
-                    <li>Masterpiece crafted with precision by Charan.</li>
+                <ul class="text-[11px] text-amber-200/70 space-y-1.5 list-disc list-inside">
+                    <li>Realistic SVG chess pieces with exquisite design.</li>
+                    <li>Play head-to-head or challenge the smart AI.</li>
+                    <li>Full castling, en passant & promotion rules active.</li>
+                    <li>Created with brilliance by Charan.</li>
                 </ul>
             </div>
         </section>
 
     </main>
 
-    <footer class="mt-6 text-center text-xs text-amber-400/60 font-semibold tracking-wider">
+    <footer class="mt-4 text-center text-[11px] text-amber-400/50 font-semibold tracking-wider">
         ROYAL GRANDMASTER CHESS &bull; CREATED BY CHARAN
     </footer>
 
+    <!-- Promotion Modal -->
     <div id="promotionModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-amber-500/40 p-6 rounded-3xl shadow-2xl max-w-sm w-full text-center space-y-4">
-            <h3 class="text-lg font-bold text-amber-200 royal-title">Royal Promotion</h3>
+            <h3 class="text-base font-bold text-amber-200 royal-title">Royal Promotion</h3>
             <p class="text-xs text-amber-400/80">Select your piece's higher calling:</p>
-            <div id="promotionChoices" class="grid grid-cols-4 gap-3 py-2">
-                <!-- Dynamically populated promotion icons -->
-            </div>
+            <div id="promotionChoices" class="grid grid-cols-4 gap-3 py-2"></div>
         </div>
     </div>
 
+    <!-- Game Over Modal -->
     <div id="gameOverModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-amber-500/50 p-8 rounded-3xl shadow-2xl max-w-md w-full text-center space-y-5">
-            <div id="gameOverIcon" class="w-16 h-16 bg-amber-500/10 text-amber-300 rounded-2xl mx-auto flex items-center justify-center text-3xl border border-amber-500/30 shadow-lg">
+        <div class="bg-slate-900 border border-amber-500/50 p-7 rounded-3xl shadow-2xl max-w-md w-full text-center space-y-4">
+            <div class="w-14 h-14 bg-amber-500/10 text-amber-300 rounded-2xl mx-auto flex items-center justify-center text-2xl border border-amber-500/30 shadow-lg">
                 <i class="fa-solid fa-trophy"></i>
             </div>
             <div>
-                <h3 id="gameOverTitle" class="text-xl font-bold text-amber-100 royal-title">Checkmate!</h3>
-                <p id="gameOverSubtitle" class="text-sm text-amber-300/80 mt-1">White triumphs over the realm.</p>
+                <h3 id="gameOverTitle" class="text-lg font-bold text-amber-100 royal-title">Checkmate!</h3>
+                <p id="gameOverSubtitle" class="text-xs text-amber-300/80 mt-1">White triumphs over the realm.</p>
             </div>
-            <button onclick="resetGame(); closeGameOverModal();" class="w-full py-3 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 hover:from-amber-600 hover:to-yellow-400 text-slate-950 font-bold rounded-xl shadow-lg transition active:scale-95 royal-title tracking-wide">
+            <button onclick="resetGame(); closeGameOverModal();" class="w-full py-2.5 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 hover:from-amber-600 hover:to-yellow-400 text-slate-950 font-bold rounded-xl shadow-lg transition active:scale-95 royal-title text-sm tracking-wide">
                 Reignite Battle
             </button>
         </div>
     </div>
 
     <script>
-        const SYMBOLS = {
-            'wP': '♙', 'wN': '♘', 'wB': '♗', 'wR': '♖', 'wQ': '♕', 'wK': '♔',
-            'bP': '♟', 'bN': '♞', 'bB': '♝', 'bR': '♜', 'bQ': '♛', 'bK': '♚'
+        // High Quality SVG Chess Pieces
+        const PIECE_SVGS = {
+            'wK': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 11.63V6M20 8h5" stroke-linejoin="miter"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1.5-1.5-3-1.5s-3 1.5-3 1.5c-1.5 3 3 10.5 3 10.5z" fill="#fff" stroke="#d4af37"/><path d="M12 26c0 2 1.5 3 2 4h17c.5-1 2-2 2-4 0-1.5-1-2.5-1-2.5h-19s-1 1-1 2.5z" fill="#fff" stroke="#d4af37"/><path d="M11 32h23v3H11z" fill="#fff" stroke="#d4af37"/><path d="M10 36h25v3H10z" fill="#fff" stroke="#d4af37"/></g></svg>`,
+            'wQ': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 26c8.5-3.5 13.5-3.5 27 0l4-13-7 7-6-9-6 9-7-7-4 13z" fill="#fff" stroke="#d4af37"/><path d="M9 26c0 2 1.5 2 2 4h23c.5-2 2-2 2-4 0-1.5-1-2.5-1-2.5h-23s-1 1-1 2.5z" fill="#fff" stroke="#d4af37"/><path d="M11 32h23v3H11z" fill="#fff" stroke="#d4af37"/><path d="M10 36h25v3H10z" fill="#fff" stroke="#d4af37"/></g></svg>`,
+            'wR': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39h27v-3H9v3zM12 33v-11h21v11H12zM11 19v-4h23v4H11zM10 15h25v-3H10v3z" fill="#fff" stroke="#d4af37"/><path d="M14 22h17v3H14z" fill="#d4af37"/></g></svg>`,
+            'wB': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g fill="#fff" stroke="#d4af37"><path d="M9 36c3.39-.97 10.11 1.03 13.5-2.5 3.39 3.53 10.11 1.53 13.5 2.5H9z"/><path d="M15 32c2.5 0 5-1.5 7.5-3 2.5 1.5 5 3 7.5 3v3H15v-3z"/><path d="M22.5 9c2.5 0 5 2.5 5 5 0 3-2 5-5 8-3-3-5-5-5-8 0-2.5 2.5-5 5-5z"/></g><path d="M24 18c.61 3.35 1.7 5.06 3.5 6" stroke="#d4af37"/></g></svg>`,
+            'wN': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10c10.5 1 16.5 8 16 26H9c0-23 11-24 13-26z" fill="#fff" stroke="#d4af37"/><path d="M9.5 36c5.5 0 9-1.5 13-4.5 4 3 7.5 4.5 13 4.5" fill="#fff" stroke="#d4af37"/><path d="M16 19s2-2 4-1" stroke="#d4af37"/></g></svg>`,
+            'wP': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 15 19.5 15 23c0 2 1 3 2 4h11c1-1 2-2 2-4 0-3.5-2.33-6.5-4.28-7.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" fill="#fff" stroke="#d4af37"/><path d="M12 33c0 2 1.5 3 2 4h17c.5-1 2-2 2-4 0-1.5-1-2.5-1-2.5h-19s-1 1-1 2.5z" fill="#fff" stroke="#d4af37"/></g></svg>`,
+
+            'bK': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 11.63V6M20 8h5" stroke-linejoin="miter" stroke="#ffd700"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1.5-1.5-3-1.5s-3 1.5-3 1.5c-1.5 3 3 10.5 3 10.5z" fill="#1e293b" stroke="#ffd700"/><path d="M12 26c0 2 1.5 3 2 4h17c.5-1 2-2 2-4 0-1.5-1-2.5-1-2.5h-19s-1 1-1 2.5z" fill="#1e293b" stroke="#ffd700"/><path d="M11 32h23v3H11z" fill="#1e293b" stroke="#ffd700"/><path d="M10 36h25v3H10z" fill="#1e293b" stroke="#ffd700"/></g></svg>`,
+            'bQ': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 26c8.5-3.5 13.5-3.5 27 0l4-13-7 7-6-9-6 9-7-7-4 13z" fill="#1e293b" stroke="#ffd700"/><path d="M9 26c0 2 1.5 2 2 4h23c.5-2 2-2 2-4 0-1.5-1-2.5-1-2.5h-23s-1 1-1 2.5z" fill="#1e293b" stroke="#ffd700"/><path d="M11 32h23v3H11z" fill="#1e293b" stroke="#ffd700"/><path d="M10 36h25v3H10z" fill="#1e293b" stroke="#ffd700"/></g></svg>`,
+            'bR': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39h27v-3H9v3zM12 33v-11h21v11H12zM11 19v-4h23v4H11zM10 15h25v-3H10v3z" fill="#1e293b" stroke="#ffd700"/><path d="M14 22h17v3H14z" fill="#ffd700"/></g></svg>`,
+            'bB': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g fill="#1e293b" stroke="#ffd700"><path d="M9 36c3.39-.97 10.11 1.03 13.5-2.5 3.39 3.53 10.11 1.53 13.5 2.5H9z"/><path d="M15 32c2.5 0 5-1.5 7.5-3 2.5 1.5 5 3 7.5 3v3H15v-3z"/><path d="M22.5 9c2.5 0 5 2.5 5 5 0 3-2 5-5 8-3-3-5-5-5-8 0-2.5 2.5-5 5-5z"/></g><path d="M24 18c.61 3.35 1.7 5.06 3.5 6" stroke="#ffd700"/></g></svg>`,
+            'bN': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10c10.5 1 16.5 8 16 26H9c0-23 11-24 13-26z" fill="#1e293b" stroke="#ffd700"/><path d="M9.5 36c5.5 0 9-1.5 13-4.5 4 3 7.5 4.5 13 4.5" fill="#1e293b" stroke="#ffd700"/><path d="M16 19s2-2 4-1" stroke="#ffd700"/></g></svg>`,
+            'bP': `<svg viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 15 19.5 15 23c0 2 1 3 2 4h11c1-1 2-2 2-4 0-3.5-2.33-6.5-4.28-7.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" fill="#1e293b" stroke="#ffd700"/><path d="M12 33c0 2 1.5 3 2 4h17c.5-1 2-2 2-4 0-1.5-1-2.5-1-2.5h-19s-1 1-1 2.5z" fill="#1e293b" stroke="#ffd700"/></g></svg>`
         };
 
-        const PIECE_NAMES = {
-            'P': 'Pawn', 'N': 'Knight', 'B': 'Bishop', 'R': 'Rook', 'Q': 'Queen', 'K': 'King'
-        };
-
-        // Game State Variables
         let board = [];
-        let turn = 'w'; // 'w' or 'b'
+        let turn = 'w';
+        let gameMode = 'pvp'; // 'pvp' or 'ai'
         let selectedSquare = null;
         let legalMoves = [];
         let moveHistory = [];
-        let boardHistory = []; // For undo
+        let boardHistory = [];
         let castlingRights = { w: { kingSide: true, queenSide: true }, b: { kingSide: true, queenSide: true } };
-        let enPassantTarget = null; // e.g. {r: 5, c: 3}
-        let halfmoveClock = 0;
-        let fullmoveNumber = 1;
+        let enPassantTarget = null;
         let pendingPromotion = null;
         let soundEnabled = true;
         let isGameOver = false;
+        let isAiThinking = false;
 
-        // Audio Synth for pleasant moves
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playTone(freq, type, duration) {
             if (!soundEnabled) return;
@@ -213,8 +228,8 @@
                 const gain = audioCtx.createGain();
                 osc.type = type;
                 osc.frequency.value = freq;
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
@@ -224,11 +239,18 @@
 
         function playMoveSound(isCapture) {
             if (isCapture) {
-                playTone(240, 'triangle', 0.15);
-                setTimeout(() => playTone(190, 'sawtooth', 0.15), 50);
+                playTone(260, 'triangle', 0.12);
+                setTimeout(() => playTone(180, 'sawtooth', 0.12), 40);
             } else {
-                playTone(520, 'sine', 0.1);
+                playTone(540, 'sine', 0.08);
             }
+        }
+
+        function setGameMode(mode) {
+            gameMode = mode;
+            document.getElementById('modePvP').className = mode === 'pvp' ? 'px-3 py-1.5 text-xs font-semibold rounded-lg transition bg-amber-500 text-slate-950 shadow' : 'px-3 py-1.5 text-xs font-semibold rounded-lg transition text-amber-200 hover:text-white';
+            document.getElementById('modeAI').className = mode === 'ai' ? 'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition bg-amber-500 text-slate-950 shadow' : 'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition text-amber-200 hover:text-white';
+            resetGame();
         }
 
         function initBoard() {
@@ -249,9 +271,8 @@
             boardHistory = [];
             castlingRights = { w: { kingSide: true, queenSide: true }, b: { kingSide: true, queenSide: true } };
             enPassantTarget = null;
-            halfmoveClock = 0;
-            fullmoveNumber = 1;
             isGameOver = false;
+            isAiThinking = false;
             renderBoard();
             updateUI();
         }
@@ -277,7 +298,6 @@
                 let startRow = (color === 'w') ? 6 : 1;
                 let promoRow = (color === 'w') ? 0 : 7;
 
-                // Forward 1
                 let f1r = r + dir;
                 if (f1r >= 0 && f1r < 8 && !currentBoard[f1r][c]) {
                     if (f1r === promoRow) {
@@ -285,14 +305,12 @@
                     } else {
                         moves.push({ from: {r, c}, to: {tr: f1r, tc: c} });
                     }
-                    // Forward 2
                     let f2r = r + dir * 2;
                     if (r === startRow && !currentBoard[f2r][c]) {
                         moves.push({ from: {r, c}, to: {tr: f2r, tc: c}, doubleStep: true });
                     }
                 }
 
-                // Captures & En Passant
                 [-1, 1].forEach(dc => {
                     let tr = r + dir;
                     let tc = c + dc;
@@ -305,26 +323,21 @@
                                 moves.push({ from: {r, c}, to: {tr, tc}, capture: true });
                             }
                         }
-                        // En Passant
                         if (currentEnPassant && currentEnPassant.r === tr && currentEnPassant.c === tc) {
                             moves.push({ from: {r, c}, to: {tr, tc}, enPassant: true, capture: true });
                         }
                     }
                 });
             } else if (type === 'N') {
-                const knightSteps = [
-                    [-2, -1], [-2, 1], [-1, -2], [-1, 2],
-                    [1, -2], [1, 2], [2, -1], [2, 1]
-                ];
-                knightSteps.forEach(([dr, dc]) => addMove(r + dr, c + dc));
+                [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]
+                    .forEach(([dr, dc]) => addMove(r + dr, c + dc));
             } else if (type === 'B' || type === 'R' || type === 'Q') {
                 let dirs = [];
-                if (type === 'B' || type === 'Q') dirs.push([-1, -1], [-1, 1], [1, -1], [1, 1]);
-                if (type === 'R' || type === 'Q') dirs.push([-1, 0], [1, 0], [0, -1], [0, 1]);
+                if (type === 'B' || type === 'Q') dirs.push([-1,-1],[-1,1],[1,-1],[1,1]);
+                if (type === 'R' || type === 'Q') dirs.push([-1,0],[1,0],[0,-1],[0,1]);
 
                 dirs.forEach(([dr, dc]) => {
-                    let cr = r + dr;
-                    let cc = c + dc;
+                    let cr = r + dr, cc = c + dc;
                     while (cr >= 0 && cr < 8 && cc >= 0 && cc < 8) {
                         let target = currentBoard[cr][cc];
                         if (!target) {
@@ -335,19 +348,13 @@
                             }
                             break;
                         }
-                        cr += dr;
-                        cc += dc;
+                        cr += dr; cc += dc;
                     }
                 });
             } else if (type === 'K') {
-                const kingSteps = [
-                    [-1, -1], [-1, 0], [-1, 1],
-                    [0, -1], [0, 1],
-                    [1, -1], [1, 0], [1, 1]
-                ];
-                kingSteps.forEach(([dr, dc]) => addMove(r + dr, c + dc));
+                [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]
+                    .forEach(([dr, dc]) => addMove(r + dr, c + dc));
 
-                // Castling
                 if (color === 'w' && r === 7 && c === 4) {
                     if (currentCastling.w.kingSide && !currentBoard[7][5] && !currentBoard[7][6] && currentBoard[7][7] === 'wR') {
                         if (!isSquareAttacked(7, 4, 'b', currentBoard) && !isSquareAttacked(7, 5, 'b', currentBoard) && !isSquareAttacked(7, 6, 'b', currentBoard)) {
@@ -391,21 +398,12 @@
         function getPseudoLegalMovesForAttack(r, c, currentBoard) {
             let piece = currentBoard[r][c];
             if (!piece) return [];
-            let color = piece[0];
-            let type = piece[1];
-            let moves = [];
-
-            let add = (tr, tc) => {
-                if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) moves.push({tr, tc});
-            };
+            let color = piece[0], type = piece[1], moves = [];
+            let add = (tr, tc) => { if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) moves.push({tr, tc}); };
 
             if (type === 'P') {
                 let dir = (color === 'w') ? -1 : 1;
-                [-1, 1].forEach(dc => {
-                    let tr = r + dir;
-                    let tc = c + dc;
-                    if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) moves.push({tr, tc});
-                });
+                [-1, 1].forEach(dc => add(r + dir, c + dc));
             } else if (type === 'N') {
                 [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]
                     .forEach(([dr, dc]) => add(r+dr, c+dc));
@@ -432,8 +430,7 @@
             let pseudo = getPseudoLegalMoves(r, c);
             let piece = board[r][c];
             if (!piece) return [];
-            let color = piece[0];
-            let legal = [];
+            let color = piece[0], legal = [];
 
             pseudo.forEach(move => {
                 let tempBoard = board.map(row => [...row]);
@@ -448,18 +445,15 @@
                 let kingR = -1, kingC = -1;
                 for (let i = 0; i < 8; i++) {
                     for (let j = 0; j < 8; j++) {
-                        if (tempBoard[i][j] === color + 'K') {
-                            kingR = i; kingC = j;
-                        }
+                        if (tempBoard[i][j] === color + 'K') { kingR = i; kingC = j; }
                     }
                 }
 
-                let opponentColor = (color === 'w') ? 'b' : 'w';
-                if (kingR !== -1 && !isSquareAttacked(kingR, kingC, opponentColor, tempBoard)) {
+                let opp = (color === 'w') ? 'b' : 'w';
+                if (kingR !== -1 && !isSquareAttacked(kingR, kingC, opp, tempBoard)) {
                     legal.push(move);
                 }
             });
-
             return legal;
         }
 
@@ -480,9 +474,7 @@
             let kr = -1, kc = -1;
             for (let i = 0; i < 8; i++) {
                 for (let j = 0; j < 8; j++) {
-                    if (currentBoard[i][j] === color + 'K') {
-                        kr = i; kc = j;
-                    }
+                    if (currentBoard[i][j] === color + 'K') { kr = i; kc = j; }
                 }
             }
             let opp = (color === 'w') ? 'b' : 'w';
@@ -495,8 +487,6 @@
                 turn: turn,
                 castlingRights: JSON.parse(JSON.stringify(castlingRights)),
                 enPassantTarget: enPassantTarget,
-                halfmoveClock: halfmoveClock,
-                fullmoveNumber: fullmoveNumber,
                 moveHistoryLength: moveHistory.length
             });
 
@@ -512,13 +502,11 @@
 
             if (move.castling) {
                 if (move.castling === 'k') {
-                    let rookRow = move.from.r;
-                    board[rookRow][5] = board[rookRow][7];
-                    board[rookRow][7] = null;
+                    board[move.from.r][5] = board[move.from.r][7];
+                    board[move.from.r][7] = null;
                 } else if (move.castling === 'q') {
-                    let rookRow = move.from.r;
-                    board[rookRow][3] = board[rookRow][0];
-                    board[rookRow][0] = null;
+                    board[move.from.r][3] = board[move.from.r][0];
+                    board[move.from.r][0] = null;
                 }
             }
 
@@ -537,8 +525,7 @@
             }
 
             if (move.doubleStep) {
-                let epRow = (move.from.r + move.to.tr) / 2;
-                enPassantTarget = { r: epRow, c: move.to.tc };
+                enPassantTarget = { r: (move.from.r + move.to.tr) / 2, c: move.to.tc };
             } else {
                 enPassantTarget = null;
             }
@@ -547,8 +534,6 @@
             moveHistory.push({ notation, color: piece[0] });
 
             turn = (turn === 'w') ? 'b' : 'w';
-            if (turn === 'w') fullmoveNumber++;
-
             playMoveSound(isCapture);
 
             selectedSquare = null;
@@ -557,6 +542,10 @@
             renderBoard();
             updateUI();
             checkGameEndConditions();
+
+            if (!isGameOver && gameMode === 'ai' && turn === 'b') {
+                triggerAIMove();
+            }
         }
 
         function getMoveNotation(move, piece, captured, isCapture) {
@@ -578,8 +567,25 @@
             if (isKingInCheck(oppColor)) {
                 checkSuffix = getAllLegalMoves(oppColor).length === 0 ? '#' : '+';
             }
-
             return `${pSymbol}${capSymbol}${dest}${promoStr}${checkSuffix}`;
+        }
+
+        function triggerAIMove() {
+            isAiThinking = true;
+            updateUI();
+            setTimeout(() => {
+                let allMoves = getAllLegalMoves('b');
+                if (allMoves.length > 0) {
+                    // Simple heuristic AI: Prioritize captures, otherwise pick random legal move
+                    let captures = allMoves.filter(m => m.capture);
+                    let chosenMove = captures.length > 0 ? captures[Math.floor(Math.random() * captures.length)] : allMoves[Math.floor(Math.random() * allMoves.length)];
+                    isAiThinking = false;
+                    makeMove(chosenMove);
+                } else {
+                    isAiThinking = false;
+                    updateUI();
+                }
+            }, 600);
         }
 
         function checkGameEndConditions() {
@@ -598,15 +604,17 @@
         }
 
         function undoMove() {
-            if (boardHistory.length === 0) return;
-            let last = boardHistory.pop();
-            board = last.board;
-            turn = last.turn;
-            castlingRights = last.castlingRights;
-            enPassantTarget = last.enPassantTarget;
-            halfmoveClock = last.halfmoveClock;
-            fullmoveNumber = last.fullmoveNumber;
-            moveHistory = moveHistory.slice(0, last.moveHistoryLength);
+            if (boardHistory.length === 0 || isAiThinking) return;
+            let stepsToUndo = (gameMode === 'ai' && boardHistory.length >= 2) ? 2 : 1;
+            for (let i = 0; i < stepsToUndo; i++) {
+                if (boardHistory.length === 0) break;
+                let last = boardHistory.pop();
+                board = last.board;
+                turn = last.turn;
+                castlingRights = last.castlingRights;
+                enPassantTarget = last.enPassantTarget;
+                moveHistory = moveHistory.slice(0, last.moveHistoryLength);
+            }
             selectedSquare = null;
             legalMoves = [];
             isGameOver = false;
@@ -626,49 +634,42 @@
                 for (let c = 0; c < 8; c++) {
                     let isLight = (r + c) % 2 === 0;
                     let squareEl = document.createElement('div');
-                    // Royal Obsidian & Polished Gold/Sand Palette
-                    squareEl.className = `square ${isLight ? 'bg-[#e2d5bc] text-slate-900' : 'bg-[#263238] text-amber-100'} cursor-pointer transition-colors duration-150`;
+                    squareEl.className = `square ${isLight ? 'bg-[#d1c4a9]' : 'bg-[#3b4b59]'}`;
                     squareEl.dataset.row = r;
                     squareEl.dataset.col = c;
 
-                    // Highlight selected square
                     if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
-                        squareEl.classList.remove('bg-[#e2d5bc]', 'bg-[#263238]');
-                        squareEl.classList.add('bg-amber-600', 'text-white');
+                        squareEl.classList.add('bg-amber-600/90');
                     }
 
-                    // Highlight legal move destinations
                     let legalMatch = legalMoves.find(m => m.to.tr === r && m.to.tc === c);
                     if (legalMatch) {
                         let indicator = document.createElement('div');
                         if (legalMatch.capture) {
-                            indicator.className = 'absolute inset-0 border-4 border-amber-400 rounded-xl animate-pulse bg-amber-500/20';
+                            indicator.className = 'absolute inset-0 border-3 border-amber-400 rounded-lg animate-pulse bg-amber-500/30';
                         } else {
-                            indicator.className = 'absolute w-4 h-4 bg-amber-400 rounded-full shadow-lg shadow-amber-300 animate-ping';
+                            indicator.className = 'absolute w-3.5 h-3.5 bg-amber-400 rounded-full shadow-md shadow-amber-300 animate-ping';
                         }
                         squareEl.appendChild(indicator);
                     }
 
-                    // Render Piece with Royal Styling
                     let piece = board[r][c];
-                    if (piece) {
-                        let pieceSpan = document.createElement('span');
-                        // White pieces get glowing pearl/gold aura; Black pieces get majestic obsidian dark gloss
-                        pieceSpan.className = `piece font-bold ${piece[0] === 'w' ? 'text-amber-50 drop-shadow-[0_2px_6px_rgba(255,215,0,0.6)]' : 'text-slate-950 drop-shadow-[0_2px_6px_rgba(255,255,255,0.4)]'}`;
-                        pieceSpan.innerHTML = SYMBOLS[piece];
-                        squareEl.appendChild(pieceSpan);
+                    if (piece && PIECE_SVGS[piece]) {
+                        let pieceDiv = document.createElement('div');
+                        pieceDiv.className = 'piece';
+                        pieceDiv.innerHTML = PIECE_SVGS[piece];
+                        squareEl.appendChild(pieceDiv);
                     }
 
-                    // Rank and File coordinate tags
                     if (c === 0) {
                         let rankTag = document.createElement('span');
-                        rankTag.className = `absolute top-1 left-1.5 text-[10px] font-bold ${isLight ? 'text-slate-900/40' : 'text-amber-200/40'}`;
+                        rankTag.className = `absolute top-1 left-1.5 text-[9px] font-bold ${isLight ? 'text-slate-900/40' : 'text-amber-200/40'}`;
                         rankTag.innerText = ranks[r];
                         squareEl.appendChild(rankTag);
                     }
                     if (r === 7) {
                         let fileTag = document.createElement('span');
-                        fileTag.className = `absolute bottom-1 right-1.5 text-[10px] font-bold ${isLight ? 'text-slate-900/40' : 'text-amber-200/40'}`;
+                        fileTag.className = `absolute bottom-1 right-1.5 text-[9px] font-bold ${isLight ? 'text-slate-900/40' : 'text-amber-200/40'}`;
                         fileTag.innerText = files[c];
                         squareEl.appendChild(fileTag);
                     }
@@ -680,7 +681,8 @@
         }
 
         function handleSquareClick(r, c) {
-            if (isGameOver) return;
+            if (isGameOver || isAiThinking) return;
+            if (gameMode === 'ai' && turn === 'b') return;
 
             let clickedPiece = board[r][c];
 
@@ -714,8 +716,8 @@
             choices.innerHTML = '';
             ['Q', 'R', 'B', 'N'].forEach(pType => {
                 let btn = document.createElement('button');
-                btn.className = 'p-3 bg-slate-950 hover:bg-slate-800 rounded-2xl text-3xl border border-amber-500/30 text-amber-200 transition active:scale-95 flex items-center justify-center shadow-lg';
-                btn.innerHTML = SYMBOLS[color + pType];
+                btn.className = 'p-3 bg-slate-950 hover:bg-slate-800 rounded-2xl border border-amber-500/30 text-amber-200 transition active:scale-95 flex items-center justify-center shadow-lg';
+                btn.innerHTML = `<div style="width:36px;height:36px">${PIECE_SVGS[color + pType]}</div>`;
                 btn.onclick = () => {
                     pendingPromotion.promotion = pType;
                     let move = pendingPromotion;
@@ -744,27 +746,34 @@
             const gameStatus = document.getElementById('gameStatus');
             const moveCountBadge = document.getElementById('moveCountBadge');
             const moveHistoryList = document.getElementById('moveHistoryList');
+            const aiThinkingBadge = document.getElementById('aiThinkingBadge');
+
+            if (isAiThinking) {
+                aiThinkingBadge.classList.remove('hidden');
+            } else {
+                aiThinkingBadge.classList.add('hidden');
+            }
 
             if (turn === 'w') {
-                turnIndicator.className = 'w-4 h-4 rounded-full bg-amber-200 shadow-md shadow-amber-200/50 animate-pulse';
+                turnIndicator.className = 'w-3.5 h-3.5 rounded-full bg-amber-200 shadow-md shadow-amber-200/50 animate-pulse';
                 turnText.innerText = "White's Royal Turn";
             } else {
-                turnIndicator.className = 'w-4 h-4 rounded-full bg-slate-950 border border-amber-500 shadow-md animate-pulse';
-                turnText.innerText = "Black's Royal Turn";
+                turnIndicator.className = 'w-3.5 h-3.5 rounded-full bg-slate-950 border border-amber-500 shadow-md animate-pulse';
+                turnText.innerText = gameMode === 'ai' ? "Computer's Turn" : "Black's Royal Turn";
             }
 
             if (isKingInCheck(turn)) {
                 gameStatus.innerText = "⚠️ Royal Crown in Check!";
-                gameStatus.className = "text-xs text-rose-400 font-semibold animate-bounce";
+                gameStatus.className = "text-[11px] text-rose-400 font-semibold animate-bounce";
             } else {
                 gameStatus.innerText = "Command your pieces";
-                gameStatus.className = "text-xs text-amber-400/80";
+                gameStatus.className = "text-[11px] text-amber-400/80";
             }
 
             moveCountBadge.innerText = `${moveHistory.length} Moves`;
 
             if (moveHistory.length === 0) {
-                moveHistoryList.innerHTML = '<div class="text-amber-300/40 italic text-center py-8">The kingdom awaits your first command.</div>';
+                moveHistoryList.innerHTML = '<div class="text-amber-300/40 italic text-center py-10">The kingdom awaits your first command.</div>';
             } else {
                 moveHistoryList.innerHTML = '';
                 for (let i = 0; i < moveHistory.length; i += 2) {
@@ -775,7 +784,7 @@
                     let rowDiv = document.createElement('div');
                     rowDiv.className = 'flex items-center justify-between px-3 py-1.5 rounded-lg bg-slate-950/60 border border-amber-500/10';
                     rowDiv.innerHTML = `
-                        <span class="text-amber-500/60 font-bold w-8">${moveNum}.</span>
+                        <span class="text-amber-500/60 font-bold w-7">${moveNum}.</span>
                         <span class="text-amber-100 font-medium flex-1 px-2">${wMove}</span>
                         <span class="text-amber-300/80 font-medium flex-1 px-2">${bMove}</span>
                     `;
@@ -792,11 +801,7 @@
         function toggleSound() {
             soundEnabled = !soundEnabled;
             const icon = document.getElementById('soundIcon');
-            if (soundEnabled) {
-                icon.className = 'fa-solid fa-volume-high';
-            } else {
-                icon.className = 'fa-solid fa-volume-xmark';
-            }
+            icon.className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
         }
 
         function offerDraw() {
